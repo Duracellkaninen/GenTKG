@@ -18,7 +18,7 @@ if __name__ == "__main__":
     type_dataset = parsed["dataset"]
     name_rules = parsed["name_of_rules_file"]
     
-    path_workspace = "./data/"+type_dataset+"/" #Icew s14 /icews14
+    path_workspace = "./data/original/"+type_dataset+"/" #Icew s14 /icews14
     path_out_tl = "./output/"+type_dataset+"/"
     print(path_out_tl)
     
@@ -29,7 +29,8 @@ if __name__ == "__main__":
     period = 1
     if type_dataset == "icews18":
         num_relations = 256 #for ICEWS18 #set before np.array
-        period = 24
+        #period = 24
+        period = 1
     elif type_dataset == "icews14":
         num_relations = 230
         period = 24

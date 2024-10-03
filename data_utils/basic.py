@@ -65,8 +65,13 @@ def read_json(json_dir):
 def read_json_as_list(json_dir):
     return list(read_json(json_dir).keys())
 
+#def just_read_txt(path_txt):
+ #   with open(path_txt) as file:
+  #      content = file.read()
+   # return content
+
 def just_read_txt(path_txt):
-    with open(path_txt) as file:
+    with open(path_txt, 'r', encoding='utf-8') as file:
         content = file.read()
     return content
 

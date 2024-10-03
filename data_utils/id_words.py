@@ -6,11 +6,15 @@ def convert(str_in, dict_in):
 def id_words(li, dict_ent, dict_r, dict_t, end=str(0), period=1):
     li_new = []
     for line in li:
-        columns = line.strip().split('\t')
+        columns = line.split()
+        #print(f"Processing line: {line}")
+        #columns = line.strip().split('\t')
         columns[0] = str(convert(columns[0],dict_ent))
         columns[1] = str(convert(columns[1],dict_r))
         columns[2] = str(convert(columns[2],dict_ent))
+        #print(f"Timestamp before conversion: {columns[3]}")
         columns[3] = str(convert(str(int(columns[3])*period),dict_t))
+
         line = "\t".join([columns[0], columns[1], columns[2], columns[3], end])
         li_new.append(line)
     return li_new
@@ -45,7 +49,8 @@ if __name__ == "__main__":
     type_dataset = parsed["dataset"]
     period = parsed["period"]
     
-    path_workspace = "./data/"+type_dataset+"/" 
+    #path_workspace = "./data/"+type_dataset+"/" 
+    path_workspace = "./data/original/"+type_dataset+"/"
     li_to_convert = read_txt_as_list(file_to_convert)
     test_ans = convert_dataset(li_to_convert, path_workspace, end='', period=period)
     write_txt(path_output, test_ans, head='')

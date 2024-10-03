@@ -12,6 +12,7 @@ def set_wandb_para(proj_name):
     os.environ["WANDB__SERVICE_WAIT"] = "300" #prevent issue https://github.com/wandb/wandb/issues/3911
 
 def prepair_data(args, tokenizer):
+#def prepair_data(args, tokenizer, data_path):
     if args.EVAL_PATH is not None and args.EVAL_STRATEGY != "no": #using separate train and eval sets
         train_dataset = get_dataset(args.DATA_TYPE, args.DATA_PATH)
         if args.EVAL_BY_HF: 
@@ -27,6 +28,8 @@ def prepair_data(args, tokenizer):
         data = {"train": train_data, "test": eval_data}
     else: 
         dataset = get_dataset(args.DATA_TYPE, args.DATA_PATH)
+        #dataset = get_dataset(args.DATA_TYPE, data_path)
+
         data = process_data(args, tokenizer, args.DATA_TYPE, dataset)
     return data
 
@@ -70,6 +73,9 @@ if __name__ == "__main__":
 
     lora_config = get_lora_config(args)
     model, tokenizer = get_model_and_tokenizer(args, lora_config)
+
+   # data_path = r"./data/processed_new/icews18/train/test_answers/icews18_16.json"  # Use raw string format for paths
+    #data = prepair_data(args, tokenizer, data_path)
 
     data = prepair_data(args, tokenizer)
     #wandb is combined with transformers.Trainer, by using TrainingArguments, as shown in the official site

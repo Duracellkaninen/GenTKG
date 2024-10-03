@@ -21,12 +21,17 @@ class Retriever:
         
         self.entities_flip = flip_dict(self.entities)
         self.relations_flip = flip_dict(self.relations)
+        ### konverterar id till tid keys
+        self.id_to_times = {v: k for k, v in self.times_id.items()}
+        ###
         col_sub = []
         col_rel = []
         col_obj = []
         col_time = []
         for row in all_facts:
-            row = row.strip().split('\t')
+            #row = row.strip().split('\t')
+            row = row.split()
+            #print(f"Processing line: {row}")
             col_sub.append(row[0]) #take sub
             col_rel.append(row[1]) #Get the relation column of all facts
             col_obj.append(row[2]) #Take obj
@@ -158,7 +163,8 @@ class Retriever:
 
     def collect_hist(self, i, facts, num_facts):
         period = 1
-        if self.dataset == "icews14" or self.dataset == "icews18":
+        #if self.dataset == "icews14" or self.dataset == "icews18":
+        if self.dataset == "icews14":
             period = 24
         histories = []
         facts = facts[0:num_facts] # 
@@ -178,8 +184,17 @@ class Retriever:
 
     def build_history_query(self, time, test_sub, test_rel, histories=''):
         period = 1
-        if self.dataset == "icews14" or self.dataset == "icews18":
+        #if self.dataset == "icews14" or self.dataset == "icews18":
+        if self.dataset == "icews14":
             period = 24
+
+        ###
+       # print(f"Attempting to access time ID: '{time}'")  # Debugging statement
+       # if time not in self.times_id:
+        #    print(f"Warning: Time '{time}' not found in times_id.")
+        ###
+        time = self.id_to_times.get(time, str(time))
+        print(time)
         time_in_id = self.times_id[time]
         return [''.join(histories)  + str(int(time_in_id)/int(period))+': ['+ test_sub +', '+ test_rel+',\n'#times id[time]
                 ]

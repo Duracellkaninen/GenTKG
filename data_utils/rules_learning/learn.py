@@ -26,7 +26,7 @@ transition_distr = parsed["transition_distr"]
 num_processes = parsed["num_processes"]
 seed = parsed["seed"]
 
-dataset_dir = "../../data/" + dataset + "/"
+dataset_dir = "../../data/processed_new/" + dataset + "/"
 data = Grapher(dataset_dir)
 temporal_walk = Temporal_Walk(data.train_idx, data.inv_relation_id, transition_distr)
 rl = Rule_Learner(temporal_walk.edges, data.id2relation, data.inv_relation_id, dataset)

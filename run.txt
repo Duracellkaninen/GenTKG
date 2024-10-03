@@ -1,0 +1,29 @@
+
+
+python ./data_utils/id_words.py --file_to_convert ./data/original/icews18/train.txt --path_output ./data/processed_new/icews18/train.txt --dataset icews18 --period 1
+python ./data_utils/id_words.py --file_to_convert ./data/original/icews18/valid.txt --path_output ./data/processed_new/icews18/valid.txt --dataset icews18 --period 1
+python ./data_utils/id_words.py --file_to_convert ./data/original/icews18/test.txt --path_output ./data/processed_new/icews18/test.txt --dataset icews18 --period 1
+
+OR TRUNCATED
+
+python truncate_ICEWS18.py (10% av train.txt)
+(to concatenate RE-net data files)
+Get-Content train.txt, valid.txt, test.txt | Set-Content all_facts.txt
+
+python ./data_utils/id_words.py --file_to_convert ./data/original/icews18_trunc/train.txt --path_output ./data/processed_new/icews18_trunc/train.txt --dataset icews18_trunc --period 1
+python ./data_utils/id_words.py --file_to_convert ./data/original/icews18_trunc/valid.txt --path_output ./data/processed_new/icews18_trunc/valid.txt --dataset icews18_trunc --period 1
+python ./data_utils/id_words.py --file_to_convert ./data/original/icews18_trunc/test.txt --path_output ./data/processed_new/icews18_trunc/test.txt --dataset icews18_trunc --period 1
+
+kopiera över entity2id- , relation2id- , ts2id.json från original datasettet till processed_new datasettet 
+
+cd data_utils/rules_learning
+python3 learn.py -d icews18 -l 1 2 3 -n 200 -p 15 -s 12
+
+kopiera filen från output i data_utils mappen till output i root mappen
+python ./data_utils/retrieve.py --name_of_rules_file 031024014917_r[1,2,3]_n200_exp_s12_rules.json --dataset icews18_trunc
+
+python ./data_utils/create_json_train.py --dir_of_trainset './data/processed_new/icews18_trunc/train/history_facts/history_facts_icews18_trunc.txt' --dir_of_answers './data/processed_new/icews18_trunc/train/test_answers/test_answers_icews18_trunc.txt' --dir_of_entities2id './data/original/icews18_trunc/entity2id.json' --path_save './data/processed_new/icews18_trunc/train'
+
+
+noteringar:
+retrieval algoritmen tar väldigt lång tid för ett helt dataset (någon timme), tar ca 10 min för 10% av train.txt

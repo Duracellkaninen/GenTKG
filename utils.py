@@ -3,15 +3,20 @@ from transformers import LlamaTokenizer, LlamaForCausalLM, BitsAndBytesConfig
 import transformers
 from datasets import load_dataset
 import torch
-
-
+import os  # Add this line to import the os module
+from accelerate import load_checkpoint_and_dispatch
+from transformers import TrainingArguments
 def get_model_and_tokenizer(args, config):
+    # Create folders for offloaded weights if needed
+    os.makedirs("./offload_weights", exist_ok=True)
+
     if args.BIT_8:
         model = LlamaForCausalLM.from_pretrained(
             args.MODEL_NAME,
             load_in_8bit=True,
             device_map="auto",
             trust_remote_code=True,
+            offload_folder="./offload_weights"  # Specify offload folder
         )
     elif args.BIT_4:
         quant_config = BitsAndBytesConfig(
@@ -25,20 +30,25 @@ def get_model_and_tokenizer(args, config):
             quantization_config=quant_config,
             device_map="auto",
             trust_remote_code=True,
+            offload_folder="./offload_weights"  # Specify offload folder
         )
     else:
+        # Load full model
         model = LlamaForCausalLM.from_pretrained(
             args.MODEL_NAME,
             device_map="auto",
             trust_remote_code=True,
+            offload_folder="./offload_weights"  # Specify offload folder
         )
 
+    # Load the tokenizer
     tokenizer = LlamaTokenizer.from_pretrained(
         args.MODEL_NAME,
         trust_remote_code=True,
         pad_token="</s>"
     )
 
+    # Prepare the model for k-bit training if needed
     model = prepare_model_for_kbit_training(model)
     model = get_peft_model(model, config)
     model.config.use_cache = False
@@ -123,32 +133,40 @@ def get_trainer(args, model, data, tokenizer):
     LOAD_BEST_MODEL_AT_END = False
     if args.LOAD_BEST_MODEL_AT_END == 1:
         LOAD_BEST_MODEL_AT_END = True
+
+    # Initialize TrainingArguments
+    training_args = TrainingArguments(
+        per_device_train_batch_size=args.MICRO_BATCH_SIZE,
+        gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+        warmup_steps=args.WARMUP_STEPS,
+        num_train_epochs=args.EPOCHS,
+        learning_rate=args.LEARNING_RATE,
+        save_strategy="steps",
+        save_steps=args.SAVE_STEPS,
+        eval_steps=args.EVAL_STEPS,
+        output_dir=args.OUTPUT_DIR,
+        overwrite_output_dir=True,
+        save_total_limit=args.SAVE_TOTAL_LIMIT,
+        evaluation_strategy=args.EVAL_STRATEGY,
+        report_to=args.REPORT_TO,  # enable logging to W&B
+        run_name=args.RUN_NAME,  # name of the W&B run (optional)
+        load_best_model_at_end=LOAD_BEST_MODEL_AT_END,
+        logging_steps=args.LOGGING_STEPS,
+        bf16=False,  # Set to True if bf16 is supported
+        adam_beta1=0.9,  # adjust Adam parameters
+        adam_beta2=0.95,
+    )
+
+    # Instantiate the Trainer without a model
     trainer = llama2_trainer(
-        model=model,
+        model=None,  # Set model to None here initially
         train_dataset=data['train'],
-        args=transformers.TrainingArguments(
-            per_device_train_batch_size=args.MICRO_BATCH_SIZE,
-            gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-            warmup_steps=args.WARMUP_STEPS,
-            num_train_epochs=args.EPOCHS,
-            learning_rate=args.LEARNING_RATE,
-            save_strategy="steps",
-            save_steps=args.SAVE_STEPS,
-            eval_steps=args.EVAL_STEPS,
-            output_dir=args.OUTPUT_DIR,
-            overwrite_output_dir=True,
-            save_total_limit=args.SAVE_TOTAL_LIMIT,
-            evaluation_strategy=args.EVAL_STRATEGY,
-            report_to=args.REPORT_TO,  # enable logging to W&B
-            run_name=args.RUN_NAME,  # name of the W&B run (optional)
-            load_best_model_at_end=LOAD_BEST_MODEL_AT_END,
-            logging_steps=args.LOGGING_STEPS,
-            bf16=False, #True,
-            adam_beta1= 0.9, #adjust adam
-            adam_beta2= 0.95,
-        ),
+        args=training_args,
         data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
     )
+
+    # Set the model manually after initializing the Trainer
+    trainer.model = model
 
     return trainer
 
